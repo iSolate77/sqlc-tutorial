@@ -2,56 +2,39 @@ package database
 
 import (
 	"context"
-	"errors"
+	"log"
 	"time"
 
-	"sqlc-tutorial/assets"
-
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/lib/pq"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 const defaultTimeout = 3 * time.Second
 
 type DB struct {
-	*sqlx.DB
+	*pgx.Conn
 }
 
 func New(dsn string, automigrate bool) (*DB, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	db, err := sqlx.ConnectContext(ctx, "postgres", "postgres://"+dsn)
+	db, err := pgx.Connect(ctx, "postgres://"+dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
-	db.SetConnMaxIdleTime(5 * time.Minute)
-	db.SetConnMaxLifetime(2 * time.Hour)
-
 	if automigrate {
-		iofsDriver, err := iofs.New(assets.EmbeddedFiles, "migrations")
+		migrator, err := migrate.New("file://assets/migrations", "postgres://"+dsn)
 		if err != nil {
-			return nil, err
+			log.Fatal(err)
 		}
 
-		migrator, err := migrate.NewWithSourceInstance("iofs", iofsDriver, "postgres://"+dsn)
-		if err != nil {
-			return nil, err
-		}
-
-		err = migrator.Up()
-		switch {
-		case errors.Is(err, migrate.ErrNoChange):
-			break
-		case err != nil:
-			return nil, err
+		if err := migrator.Up(); err != nil && err.Error() != "no change" {
+			log.Fatal(err)
 		}
 	}
 

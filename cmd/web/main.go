@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -45,7 +46,7 @@ func run(logger *slog.Logger) error {
 
 	cfg.baseURL = env.GetString("BASE_URL", "http://localhost:4444")
 	cfg.httpPort = env.GetInt("HTTP_PORT", 4444)
-	cfg.db.dsn = env.GetString("DB_DSN", "mfaris@localhost:5432/sqlc")
+	cfg.db.dsn = env.GetString("DB_DSN", "mfaris@localhost:5432/sqlc?sslmode=disable")
 	cfg.db.automigrate = env.GetBool("DB_AUTOMIGRATE", true)
 
 	showVersion := flag.Bool("version", false, "display version and exit")
@@ -61,7 +62,7 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer db.Close(context.Background())
 
 	app := &application{
 		config: cfg,
