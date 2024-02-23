@@ -4,18 +4,17 @@ import (
 	"net/http"
 
 	"sqlc-tutorial/assets"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 func (app *application) routes() http.Handler {
-	mux := httprouter.New()
-	mux.NotFound = http.HandlerFunc(app.notFound)
+	mux := http.NewServeMux()
 
 	fileServer := http.FileServer(http.FS(assets.EmbeddedFiles))
-	mux.Handler("GET", "/static/*filepath", fileServer)
+	mux.Handle("GET /static/*filepath", fileServer)
 
-	mux.HandlerFunc("GET", "/", app.home)
+	mux.HandleFunc("GET /", app.home)
+	mux.HandleFunc("GET /author/create", app.addAuthor)
+	mux.HandleFunc("POST /authors/create", app.api.Create)
 
 	return app.recoverPanic(app.securityHeaders(mux))
 }

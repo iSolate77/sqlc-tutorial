@@ -9,9 +9,13 @@ import (
 	"runtime/debug"
 	"sync"
 
+	"sqlc-tutorial/cmd/api"
+	"sqlc-tutorial/core"
 	"sqlc-tutorial/internal/database"
 	"sqlc-tutorial/internal/env"
 	"sqlc-tutorial/internal/version"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -36,9 +40,10 @@ type config struct {
 
 type application struct {
 	config config
-	db     *database.DB
+	db     *pgxpool.Pool
 	logger *slog.Logger
 	wg     sync.WaitGroup
+	api    *api.AuthorController
 }
 
 func run(logger *slog.Logger) error {
@@ -58,17 +63,24 @@ func run(logger *slog.Logger) error {
 		return nil
 	}
 
-	db, err := database.New(cfg.db.dsn, cfg.db.automigrate)
+	dbPool, err := pgxpool.New(context.Background(), cfg.db.dsn)
 	if err != nil {
 		return err
 	}
-	defer db.Close(context.Background())
+	fmt.Println("Connected to database")
+	defer dbPool.Close()
+
+	queries := db.New(dbPool)
+	repo := core.NewRepo(queries, dbPool)
+	authorService := core.NewService(repo)
 
 	app := &application{
 		config: cfg,
-		db:     db,
+		db:     dbPool,
 		logger: logger,
+		api:    nil,
 	}
+	app.api = api.NewAuthorController(authorService)
 
 	return app.serveHTTP()
 }

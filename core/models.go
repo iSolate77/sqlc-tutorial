@@ -1,34 +1,22 @@
 package core
 
+import "github.com/jackc/pgx/v5/pgtype"
+
 type Author struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Bio  string `json:"bio"`
+	Id   int         `json:"id"`
+	Name string      `json:"name"`
+	Bio  pgtype.Text `json:"bio"`
 }
 
 type Book struct {
-	ID     int    `json:"id"`
+	Id     int    `json:"id"`
 	Title  string `json:"title"`
 	Author string `json:"author"`
 	Year   int    `json:"year"`
 }
 
 type BookAuthor struct {
-	BookID   int `json:"book_id"`
-	AuthorID int `json:"author_id"`
+	BookId   int `json:"book_id"`
+	AuthorId int `json:"author_id"`
 }
 
-type BookAuthorResponse struct {
-	BookID   int    `json:"book_id"`
-	Title    string `json:"title"`
-	Author   string `json:"author"`
-	Year     int    `json:"year"`
-	AuthorID int    `json:"author_id"`
-	Name     string `json:"name"`
-	Bio      string `json:"bio"`
-}
-
-type BookAuthorRequest struct {
-	BookID   int `json:"book_id"`
-	AuthorID int `json:"author_id"`
-}
