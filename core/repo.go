@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	db "sqlc-tutorial/internal/database"
+	"sqlc-tutorial/internal/database"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -48,8 +48,10 @@ func (r *Repo) Create(ctx context.Context, auth Author) (Author, error) {
 		Bio:  auth.Bio,
 	})
 	if err != nil {
-		return Author{}, fmt.Errorf("could not create author: %w", err)
+		tx.Rollback(ctx)
+		return Author{}, fmt.Errorf("could not rollback transaction: %w", err)
 	}
+
 	err = tx.Commit(ctx)
 	if err != nil {
 		return Author{}, fmt.Errorf("could not commit transaction: %w", err)
